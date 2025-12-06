@@ -6,22 +6,23 @@ fn brute(start: &str, end: &str) -> Vec<u64> {
 
     let mut ret = Vec::<u64>::new();
 
-    println!("Brute forcing from {} to {}", start_num, end_num);
+    // println!("Brute forcing from {} to {}", start_num, end_num);
 
     for num in start_num..=end_num {
         let s = num.to_string();
 
-        if s.len() % 2 != 0 {
-            continue;
-        }
+        // println!("{}", s);
+        for i in 0..s.len() / 2 {
+            let pattern = &s[..i + 1];
+            let repeat_pattern = pattern.repeat(s.len() / pattern.len());
 
-        let mid = s.len() / 2;
-        let first_half = &s[0..mid];
-        let second_half = &s[mid..];
+            // println!("Pattern: {}", repeat_pattern);
 
-        if first_half == second_half {
-            println!("  Found invalid ID: {}", s);
-            ret.push(num);
+            if repeat_pattern == s {
+                // println!("Found invalid number: {}", num);
+                ret.push(num);
+                break;
+            }
         }
     }
 
