@@ -1,62 +1,142 @@
+use std::fmt::Display;
 use std::fs;
 
-fn print_map(map: &Vec<Vec<char>>) {
-    for row in map {
-        for c in row {
-            print!("{}", c);
-        }
-        println!();
+enum NeighborType {
+    Four,  /* The 4 orthogonal cells */
+    Eight, /* The 8 surrounding cells */
+}
+
+#[derive(Clone, PartialEq)]
+struct Map<T> {
+    grid: Vec<Vec<T>>,
+}
+
+impl<T: Display + PartialEq> Map<T> {
+    fn new() -> Self {
+        return Map { grid: Vec::new() };
     }
+
+    fn from_vec(vec: Vec<Vec<T>>) -> Self {
+        return Map { grid: vec };
+    }
+
+    fn print(&self) {
+        for row in &self.grid {
+            for elem in row {
+                print!("{}", elem);
+            }
+            println!();
+        }
+    }
+
+    fn get(&self, x: usize, y: usize) -> Option<&T> {
+        if y >= self.grid.len() || x >= self.grid[y].len() {
+            return None;
+        }
+        return Some(&self.grid[y][x]);
+    }
+
+    fn set(&mut self, x: usize, y: usize, value: T) {
+        if y < self.grid.len() && x < self.grid[y].len() {
+            self.grid[y][x] = value;
+        }
+    }
+
+    fn get_neighbors(&self, x: usize, y: usize, neighbor_type: NeighborType) -> Vec<&T> {
+        let mut neighbors = Vec::new();
+
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if dy == 0 && dx == 0 {
+                    continue;
+                }
+
+                /* Skip diagonals for 4-neighbor mode */
+                if matches!(neighbor_type, NeighborType::Four) && dy != 0 && dx != 0 {
+                    continue;
+                }
+
+                let nx = x as isize + dx;
+                let ny = y as isize + dy;
+
+                if nx < 0 || ny < 0 {
+                    continue;
+                }
+
+                if let Some(neighbor) = self.get(nx as usize, ny as usize) {
+                    neighbors.push(neighbor);
+                }
+            }
+        }
+
+        return neighbors;
+    }
+
+    fn count(&self, target: T) -> usize
+    where
+        T: Copy,
+    {
+        let mut count = 0;
+
+        for row in &self.grid {
+            for elem in row {
+                if *elem == target {
+                    count += 1;
+                }
+            }
+        }
+
+        return count;
+    }
+}
+
+impl Map<char> {
+    fn from_string(s: &str) -> Self {
+        return Map::from_vec(s.lines().map(|line| line.chars().collect()).collect());
+    }
+}
+
+fn remove_rolls(map: &Map<char>) -> Map<char> {
+    let mut ret_map = map.clone();
+
+    let rows = map.grid.len();
+    let cols = map.grid[0].len();
+
+    for y in 0..rows {
+        for x in 0..cols {
+            if let Some('.') = map.get(x, y) {
+                continue;
+            }
+
+            let neighbors = map.get_neighbors(x, y, NeighborType::Eight);
+
+            if neighbors.iter().filter(|&&c| *c == '@').count() < 4 {
+                ret_map.set(x, y, '.');
+            }
+        }
+    }
+
+    return ret_map;
 }
 
 fn main() {
     let contents =
-        fs::read_to_string("inputs/day04/input.txt").expect("Failed to read example.txt");
+        fs::read_to_string("inputs/day04/example.txt").expect("Failed to read example.txt");
 
-    let mut map: Vec<Vec<char>> = Vec::new();
+    let mut map = Map::from_string(&contents);
 
-    for line in contents.lines() {
-        let mut row = Vec::new();
+    let start_rolls = map.count('@');
 
-        for c in line.chars() {
-            row.push(c);
+    loop {
+        let new_map = remove_rolls(&map);
+
+        if new_map == map {
+            break;
         }
 
-        map.push(row);
+        map = new_map;
     }
 
-    let rows = map.len();
-    let cols = map[0].len();
-
-    let mut accessible = 0;
-
-    for y in 0..rows {
-        for x in 0..cols {
-            if map[y][x] == '.' { continue; }
-
-            let min_y = if y > 0 { y - 1 } else { 0 };
-            let max_y = (y + 1).min(rows - 1);
-            let min_x = if x > 0 { x - 1 } else { 0 };
-            let max_x = (x + 1).min(cols - 1);
-
-            let mut neighbors = 0;
-
-            for ny in min_y..=max_y {
-                for nx in min_x..=max_x {
-                    if ny == y && nx == x { continue; }
-
-                    if map[ny][nx] == '@' {
-                        neighbors += 1;
-                    }
-                }
-            }
-
-            if neighbors < 4 {
-                accessible += 1;
-            }
-        }
-    }
-
-    print_map(&map);
-    println!("Accessible positions: {}", accessible);
+    let end_rolls = map.count('@');
+    println!("Rolls removed: {}", start_rolls - end_rolls);
 }
