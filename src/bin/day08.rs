@@ -32,19 +32,23 @@ fn main() {
         circuits.insert(&coords[i], i);
     }
 
-    let mut connections = 0;
     for (_, (a, b)) in distances {
         let a_c = *circuits.get(&coords[a]).unwrap();
         let b_c = *circuits.get(&coords[b]).unwrap();
 
+        let mut all_same = true;
         for (coord, circuit) in circuits.iter_mut() {
             if *circuit == b_c {
                 *circuit = a_c;
             }
+
+            if *circuit != a_c {
+                all_same = false;
+            }
         }
 
-        connections += 1;
-        if connections == 1000 {
+        if all_same {
+            println!("{:?} and {:?} are the last to connect.", coords[a], coords[b]);
             break;
         }
     }
