@@ -92,3 +92,7 @@ impl Map<char> {
         return Map::from_vec(s.lines().map(|line| line.chars().collect()).collect());
     }
 }
+
+// impl Map<T> {
+//     fn
+// }
