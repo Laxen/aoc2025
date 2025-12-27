@@ -10,3 +10,4 @@ name = "aoc2025"
 path = "src/lib.rs"
 
 [dependencies]
+z3 = "0.10"
